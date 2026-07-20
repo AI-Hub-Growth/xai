@@ -37,25 +37,10 @@ var allVideoModels = []string{
 
 // --- Restrict: mode ---
 
-func TestRestrict_Mode_AllModels(t *testing.T) {
-	validValues := []string{"std", "pro"}
-	invalidValues := []string{"turbo", "fast", "standard", "PRO", "STD"}
-
+func TestRestrict_Mode_PassesThroughForAllModels(t *testing.T) {
 	for _, model := range allVideoModels {
-		r := Restrict(model, internal.ParamMode)
-		if r == nil {
-			t.Errorf("model %q: Restrict(mode) returned nil, expected non-nil", model)
-			continue
-		}
-		for _, v := range validValues {
-			if err := r.ValidateString(internal.ParamMode, v); err != nil {
-				t.Errorf("model %q: mode=%q should be valid, got: %v", model, v, err)
-			}
-		}
-		for _, v := range invalidValues {
-			if err := r.ValidateString(internal.ParamMode, v); err == nil {
-				t.Errorf("model %q: mode=%q should be rejected", model, v)
-			}
+		if r := Restrict(model, internal.ParamMode); r != nil {
+			t.Errorf("model %q: Restrict(mode) = %#v, expected nil pass-through", model, r)
 		}
 	}
 }

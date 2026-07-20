@@ -26,7 +26,6 @@ import (
 )
 
 var (
-	limitMode              = &xai.StringEnum{Values: []string{internal.ModeStd, internal.ModePro}}
 	limitSeconds           = &xai.StringEnum{Values: []string{internal.Seconds5, internal.Seconds10}}
 	limitSecondsV3         = &xai.StringEnum{Values: []string{"3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"}}
 	limitSound             = &xai.StringEnum{Values: []string{internal.SoundOn, internal.SoundOff}}
@@ -78,8 +77,6 @@ func SchemaForVideo(model string) []xai.Field {
 // Returns nil if the param has no restriction.
 func Restrict(model, name string) *xai.Restriction {
 	switch name {
-	case internal.ParamMode:
-		return &xai.Restriction{Limit: limitMode}
 	case internal.ParamSeconds:
 		if isKlingV3OrOmni(model) {
 			return &xai.Restriction{Limit: limitSecondsV3}
