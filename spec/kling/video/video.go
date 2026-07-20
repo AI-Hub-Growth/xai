@@ -29,7 +29,6 @@ var (
 	limitMode              = &xai.StringEnum{Values: []string{internal.ModeStd, internal.ModePro}}
 	limitSeconds           = &xai.StringEnum{Values: []string{internal.Seconds5, internal.Seconds10}}
 	limitSecondsV3         = &xai.StringEnum{Values: []string{"3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"}}
-	limitSize              = &xai.StringEnum{Values: []string{internal.Size1920x1080, internal.Size1080x1920, internal.Size1280x720, internal.Size720x1280, internal.Size1080x1080, internal.Size720x720}}
 	limitSound             = &xai.StringEnum{Values: []string{internal.SoundOn, internal.SoundOff}}
 	limitKeepOriginalSound = &xai.StringEnum{Values: []string{string(KeepOriginalSoundYes), string(KeepOriginalSoundNo)}}
 )
@@ -86,8 +85,6 @@ func Restrict(model, name string) *xai.Restriction {
 			return &xai.Restriction{Limit: limitSecondsV3}
 		}
 		return &xai.Restriction{Limit: limitSeconds}
-	case internal.ParamSize:
-		return &xai.Restriction{Limit: limitSize}
 	case internal.ParamSound:
 		if isKlingV26OrNewer(model) || isKlingV3OrOmni(model) {
 			return &xai.Restriction{Limit: limitSound}

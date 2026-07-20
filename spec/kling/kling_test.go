@@ -225,17 +225,17 @@ func TestKlingService_Operation_Call_Validation(t *testing.T) {
 		t.Fatalf("expected ErrValueNotAllowed, got %v", err)
 	}
 
-	// Restriction: invalid size value
+	// Size is a provider-owned value and must pass through without a static enum restriction.
 	opRestrict2, _ := svc.Operation(xai.Model("kling-v2-1"), xai.GenVideo)
 	opRestrict2.Params().Set(ParamPrompt, "scene")
 	opRestrict2.Params().Set(ParamInputReference, "https://example.com/img.png")
-	opRestrict2.Params().Set(ParamSize, "4K")
-	_, err = opRestrict2.Call(ctx, svc, &Options{})
-	if err == nil {
-		t.Fatal("expected error for invalid size=4K")
+	opRestrict2.Params().Set(ParamSize, "2880x5120")
+	resp, err = opRestrict2.Call(ctx, svc, &Options{})
+	if err != nil {
+		t.Fatalf("provider-defined size should pass through: %v", err)
 	}
-	if !errors.Is(err, xai.ErrValueNotAllowed) {
-		t.Fatalf("expected ErrValueNotAllowed, got %v", err)
+	if !resp.Done() {
+		t.Fatal("expected sync response")
 	}
 
 	// Restriction: valid constants pass

@@ -120,25 +120,10 @@ func TestRestrict_Seconds_V3_V3Omni(t *testing.T) {
 
 // --- Restrict: size ---
 
-func TestRestrict_Size_AllModels(t *testing.T) {
-	validValues := []string{"1920x1080", "1080x1920", "1280x720", "720x1280", "1080x1080", "720x720"}
-	invalidValues := []string{"1920x1920", "640x480", "4k", "1080p", "auto"}
-
+func TestRestrict_Size_AllModelsIsUnrestricted(t *testing.T) {
 	for _, model := range allVideoModels {
-		r := Restrict(model, internal.ParamSize)
-		if r == nil {
-			t.Errorf("model %q: Restrict(size) returned nil", model)
-			continue
-		}
-		for _, v := range validValues {
-			if err := r.ValidateString(internal.ParamSize, v); err != nil {
-				t.Errorf("model %q: size=%q should be valid, got: %v", model, v, err)
-			}
-		}
-		for _, v := range invalidValues {
-			if err := r.ValidateString(internal.ParamSize, v); err == nil {
-				t.Errorf("model %q: size=%q should be rejected", model, v)
-			}
+		if r := Restrict(model, internal.ParamSize); r != nil {
+			t.Errorf("model %q: Restrict(size) should return nil, got %+v", model, r)
 		}
 	}
 }
