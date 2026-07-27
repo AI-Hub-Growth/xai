@@ -23,6 +23,7 @@
 - `ratio` -> 根级 `ratio`
 - `duration` -> 根级 `duration`
 - `generate_audio` -> 根级 `generate_audio`
+- `auto_create_assets` -> 根级 `auto_create_assets`
 - `reference_image_urls` / `reference_images` -> `content[]` 的 `image_url`
 - `reference_video_urls` -> `content[]` 的 `video_url`
 - `reference_audio_urls` -> `content[]` 的 `audio_url`
@@ -41,6 +42,8 @@
 1. `POST https://openai.qiniu.com/v1/assets`
 2. 轮询 `GET https://openai.qiniu.com/v1/assets/{qassetid}`
 3. `approved` 后把原始 URL 替换为 `qasset://{qassetid}` 再提交视频任务
+
+设置 `seedance.ParamAutoCreateAssets=true` 时，provider 不执行上述手工素材审查，而是保留原始 HTTP(S) URL，并在视频任务请求中发送 `auto_create_assets: true`，由平台在任务内部创建、审核和清理临时素材。
 
 例外：`byteplus/dreamina-seedance-2-0-260128` 不支持素材审查，本 provider 会直接提交原始参考 URL。
 
