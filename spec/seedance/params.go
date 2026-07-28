@@ -30,6 +30,7 @@ const (
 	ParamRatio              = "ratio"
 	ParamGenerateAudio      = "generate_audio"
 	ParamWatermark          = "watermark"
+	ParamAutoCreateAssets   = "auto_create_assets"
 )
 
 var (

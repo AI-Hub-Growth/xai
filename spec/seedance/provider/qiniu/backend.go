@@ -210,6 +210,9 @@ func (b *backend) buildTaskBody(ctx context.Context, model string, p *seedance.P
 	if ga := p.GetBool(seedance.ParamGenerateAudio); ga != nil {
 		body["generate_audio"] = *ga
 	}
+	if autoCreateAssets := p.GetBool(seedance.ParamAutoCreateAssets); autoCreateAssets != nil {
+		body["auto_create_assets"] = *autoCreateAssets
+	}
 	return body, nil
 }
 
@@ -220,6 +223,9 @@ func buildTaskBody(model string, p *seedance.Params) (map[string]any, error) {
 func (b *backend) prepareAssetURL(ctx context.Context, p *seedance.Params, rawURL, typ, name, model string) (string, error) {
 	rawURL = strings.TrimSpace(rawURL)
 	if rawURL == "" || strings.HasPrefix(strings.ToLower(rawURL), "qasset://") {
+		return rawURL, nil
+	}
+	if autoCreateAssets := p.GetBool(seedance.ParamAutoCreateAssets); autoCreateAssets != nil && *autoCreateAssets {
 		return rawURL, nil
 	}
 	if isQiniuModelWithoutAssets(model) {

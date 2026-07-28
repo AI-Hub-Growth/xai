@@ -38,6 +38,7 @@
 | `ratio` | 如 `16:9`、`adaptive` |
 | `generate_audio` | bool |
 | `watermark` | bool |
+| `auto_create_assets` | bool；由支持该能力的 provider 透传，用于任务内自动创建和清理临时素材 |
 
 ### `duration` 官方时长范围（客户端校验摘要）
 

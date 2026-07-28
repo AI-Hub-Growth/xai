@@ -306,6 +306,55 @@ func TestSubmitCanDisableAssetAutoReview(t *testing.T) {
 	}
 }
 
+func TestSubmitAutoCreateAssetsUsesProviderTemporaryAssets(t *testing.T) {
+	var assetCalled bool
+	var submittedAutoCreateAssets any
+	var submittedURL string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v1/assets":
+			assetCalled = true
+			http.NotFound(w, r)
+		case r.Method == http.MethodPost && r.URL.Path == pathCreateTask:
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			submittedAutoCreateAssets = body["auto_create_assets"]
+			content := body["content"].([]any)
+			image := content[1].(map[string]any)
+			imageURL := image["image_url"].(map[string]any)
+			submittedURL, _ = imageURL["url"].(string)
+			_, _ = w.Write([]byte(`{"id":"qvideo-1"}`))
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	t.Setenv("QINIU_ASSETS_BASE_URL", srv.URL)
+	cl := NewClient("test-key", append([]ClientOption{WithBaseURL(srv.URL)}, testClientOpts...)...)
+	b := newBackend(cl)
+	p := seedance.NewParams().
+		Set(seedance.ParamPrompt, "真人动起来").
+		Set(seedance.ParamReferenceImageURLs, []string{"https://example.com/actor.png"}).
+		Set(seedance.ParamAutoCreateAssets, true)
+
+	_, err := b.Submit(context.Background(), xai.Model(seedance.ModelDoubaoSeedance20), p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if assetCalled {
+		t.Fatal("provider temporary assets should bypass manual asset review")
+	}
+	if submittedAutoCreateAssets != true {
+		t.Fatalf("auto_create_assets=%v, want true", submittedAutoCreateAssets)
+	}
+	if submittedURL != "https://example.com/actor.png" {
+		t.Fatalf("submitted image url=%q", submittedURL)
+	}
+}
+
 func TestSubmitByteplusDreaminaSkipsAssetReview(t *testing.T) {
 	var assetCalled bool
 	var submittedModel string
