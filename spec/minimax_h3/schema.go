@@ -12,10 +12,15 @@ import (
 )
 
 var (
-	allowedResolutions  = []string{"2K", "768P"}
-	allowedAspectRatios = []string{
-		"adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16",
+	allowedResolutions      = []string{"2K", "768P"}
+	allowedTextAspectRatios = []string{
+		"21:9", "16:9", "4:3", "1:1", "3:4", "9:16",
 	}
+	allowedReferenceAspectRatios = append([]string{"adaptive"}, allowedTextAspectRatios...)
+	// The catalog restriction is a union because the current xai schema contract
+	// exposes one restriction per field. Runtime validation below applies the
+	// narrower mode-specific set.
+	allowedAspectRatios = append([]string(nil), allowedReferenceAspectRatios...)
 )
 
 // GenVideoFields returns the union of MiniMax-H3 request fields.
@@ -54,6 +59,29 @@ func GenVideoRestrict(name string) *xai.Restriction {
 	}
 }
 
+// AspectRatiosForMode returns the upstream-supported aspect ratios for a H3
+// generation mode. Image-to-video and start/end-to-video do not accept an
+// aspect ratio because their output follows the input image.
+func AspectRatiosForMode(mode string) []string {
+	switch strings.TrimSpace(mode) {
+	case VideoModeTextToVideo:
+		return append([]string(nil), allowedTextAspectRatios...)
+	case VideoModeMultiRefToVideo:
+		return append([]string(nil), allowedReferenceAspectRatios...)
+	default:
+		return nil
+	}
+}
+
+// IsAspectRatioAllowed reports whether aspect is valid for the selected H3
+// mode. An empty aspect is allowed because the upstream default applies.
+func IsAspectRatioAllowed(mode, aspect string) bool {
+	if strings.TrimSpace(aspect) == "" {
+		return true
+	}
+	return containsFold(AspectRatiosForMode(mode), aspect)
+}
+
 // VideoSchemaFor returns the MiniMax-H3 video schema for model.
 func VideoSchemaFor(model string) xai.VideoSchema {
 	if !IsVideoModel(model) {
@@ -79,6 +107,8 @@ func (*videoSchema) Restrict(name string) *xai.Restriction { return GenVideoRest
 
 func (*videoSchema) FieldModes(name string) []xai.VideoGenMode {
 	switch name {
+	case ParamAspectRatio:
+		return []xai.VideoGenMode{xai.VideoGenModeText, xai.VideoGenModeMultiRef}
 	case ParamImageURL:
 		return []xai.VideoGenMode{xai.VideoGenModeImage, xai.VideoGenModeStartEnd}
 	case ParamEndImageURL:
@@ -98,6 +128,9 @@ func normalizeVideoMode(params *Params) string {
 		len(params.GetStringSlice(ParamReferenceVideoURLs)) > 0 ||
 		len(params.GetStringSlice(ParamReferenceAudioURLs)) > 0 {
 		return VideoModeMultiRefToVideo
+	}
+	if params.HasNonEmptyString(ParamImageURL) && params.HasNonEmptyString(ParamEndImageURL) {
+		return VideoModeStartEndToVideo
 	}
 	if params.HasNonEmptyString(ParamImageURL) {
 		return VideoModeImageToVideo

@@ -34,6 +34,12 @@ func TestModelAndSchema(t *testing.T) {
 	if got := GenVideoRestrict(ParamAspectRatio).AllowedValues(); !containsFold(got, "adaptive") {
 		t.Fatalf("aspect values=%v", got)
 	}
+	if IsAspectRatioAllowed(VideoModeTextToVideo, "adaptive") {
+		t.Fatal("text-to-video must reject adaptive aspect ratio")
+	}
+	if !IsAspectRatioAllowed(VideoModeMultiRefToVideo, "adaptive") {
+		t.Fatal("multi-reference mode must allow adaptive aspect ratio")
+	}
 }
 
 func TestValidateModes(t *testing.T) {
@@ -64,6 +70,24 @@ func TestValidateModes(t *testing.T) {
 	audioOnly := NewParams().Set(ParamPrompt, "hello").Set(ParamVideoMode, VideoModeMultiRefToVideo).Set(ParamReferenceAudioURLs, []string{"https://example.com/a.mp3"}).(*Params)
 	if err := ValidateParams(audioOnly); err == nil || !strings.Contains(err.Error(), "image or video") {
 		t.Fatalf("audio-only validation error=%v", err)
+	}
+
+	textAdaptive := NewParams().Set(ParamPrompt, "hello").Set(ParamAspectRatio, "adaptive").(*Params)
+	if err := ValidateParams(textAdaptive); err == nil || !strings.Contains(err.Error(), "aspect_ratio") {
+		t.Fatalf("text adaptive validation error=%v", err)
+	}
+
+	multiAdaptive := NewParams().Set(ParamPrompt, "hello").Set(ParamAspectRatio, "adaptive").Set(ParamReferenceImageURLs, []string{"https://example.com/a.png"}).(*Params)
+	if err := ValidateParams(multiAdaptive); err != nil {
+		t.Fatalf("multi adaptive validation error=%v", err)
+	}
+
+	startEnd := NewParams().Set(ParamPrompt, "hello").Set(ParamImageURL, "https://example.com/a.png").Set(ParamEndImageURL, "https://example.com/b.png").(*Params)
+	if err := ValidateParams(startEnd); err != nil {
+		t.Fatalf("inferred start/end validation error=%v", err)
+	}
+	if got := VideoMode(startEnd); got != VideoModeStartEndToVideo {
+		t.Fatalf("inferred mode=%q, want %q", got, VideoModeStartEndToVideo)
 	}
 }
 

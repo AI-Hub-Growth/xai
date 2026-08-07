@@ -88,6 +88,9 @@ func validateParams(params *Params) error {
 		return fmt.Errorf("minimax-h3: duration must be between 5 and 15 seconds")
 	}
 	mode := normalizeVideoMode(params)
+	if aspect := params.GetString(ParamAspectRatio); aspect != "" && !IsAspectRatioAllowed(mode, aspect) {
+		return fmt.Errorf("minimax-h3: unsupported aspect_ratio %q for mode %q", aspect, mode)
+	}
 	switch mode {
 	case VideoModeTextToVideo:
 	case VideoModeImageToVideo:
