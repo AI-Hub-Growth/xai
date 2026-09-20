@@ -15,9 +15,11 @@ import (
 func TestGPTImageActionsAndOperation(t *testing.T) {
 	svc := &Service{}
 
-	actions := svc.Actions(ModelGPTImage2)
-	if len(actions) != 2 || actions[0] != xai.GenImage || actions[1] != xai.EditImage {
-		t.Fatalf("unexpected actions for %s: %v", ModelGPTImage2, actions)
+	for _, model := range []string{ModelGPTImage2, ModelGPTImage25Flare, ModelGPTImage25Sunburst} {
+		actions := svc.Actions(xai.Model(model))
+		if len(actions) != 2 || actions[0] != xai.GenImage || actions[1] != xai.EditImage {
+			t.Fatalf("unexpected actions for %s: %v", model, actions)
+		}
 	}
 
 	if got := svc.Actions("gpt-4o"); len(got) != 0 {
@@ -32,6 +34,45 @@ func TestGPTImageActionsAndOperation(t *testing.T) {
 	}
 	if _, err := svc.Operation(ModelGPTImage2, xai.GenVideo); !errors.Is(err, xai.ErrNotFound) {
 		t.Fatalf("expected ErrNotFound for gptimage/gen_video, got: %v", err)
+	}
+}
+
+func TestGPTImage25GenerateUsesImagesAPIAndExtendedQuality(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/images/generations" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body failed: %v", err)
+		}
+		if body["model"] != ModelGPTImage25Flare || body["quality"] != "max" {
+			t.Fatalf("unexpected request body: %#v", body)
+		}
+		_, _ = w.Write([]byte(`{"created":1,"data":[{"b64_json":"aGVsbG8="}]}`))
+	}))
+	defer ts.Close()
+
+	svc := &Service{baseURL: ts.URL + "/v1/", apiKey: "token-1", httpClient: ts.Client()}
+	op, err := svc.Operation(ModelGPTImage25Flare, xai.GenImage)
+	if err != nil {
+		t.Fatalf("Operation failed: %v", err)
+	}
+	if err := op.InputSchema().Restrict(ParamQuality).ValidateString(ParamQuality, "max"); err != nil {
+		t.Fatalf("2.5 schema rejected max quality: %v", err)
+	}
+	op.Params().Set("Prompt", "hello").Set("Quality", "max")
+	if _, err := op.Call(context.Background(), svc, nil); err != nil {
+		t.Fatalf("Call failed: %v", err)
+	}
+
+	legacy, err := svc.Operation(ModelGPTImage2, xai.GenImage)
+	if err != nil {
+		t.Fatalf("legacy Operation failed: %v", err)
+	}
+	legacy.Params().Set("Prompt", "hello").Set("Quality", "max")
+	if _, err := legacy.Call(context.Background(), svc, nil); err == nil || !strings.Contains(err.Error(), "Quality") {
+		t.Fatalf("expected legacy quality validation error, got: %v", err)
 	}
 }
 
