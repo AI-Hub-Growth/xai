@@ -37,6 +37,9 @@ var (
 	enumImageQuality = &xai.StringEnum{
 		Values: []string{"low", "medium", "high", "auto"},
 	}
+	enumGPTImage25Quality = &xai.StringEnum{
+		Values: []string{"low", "medium", "high", "xhigh", "max", "auto"},
+	}
 	imageRestrictions = map[string]*xai.Restriction{
 		ParamPrompt:  {Required: true},
 		ParamQuality: {Limit: enumImageQuality},
@@ -52,7 +55,8 @@ var (
 )
 
 type imageInputSchema struct {
-	edit bool
+	model string
+	edit  bool
 }
 
 func (s imageInputSchema) Fields() []xai.Field {
@@ -73,6 +77,9 @@ func (s imageInputSchema) Fields() []xai.Field {
 }
 
 func (s imageInputSchema) Restrict(name string) *xai.Restriction {
+	if name == ParamQuality {
+		return imageQualityRestriction(s.model)
+	}
 	if s.edit && name == ParamImages {
 		return imageRestrictions[name]
 	}
@@ -88,7 +95,7 @@ type genImage struct {
 }
 
 func (p *genImage) InputSchema() xai.InputSchema {
-	return imageInputSchema{}
+	return imageInputSchema{model: p.model}
 }
 
 func (p *genImage) Params() xai.Params {
@@ -104,7 +111,7 @@ func (p *genImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBui
 		return nil, xai.ErrNotSupported
 	}
 	params := p.Params().(*imageParams)
-	if err := params.validate(false); err != nil {
+	if err := params.validate(p.model, false); err != nil {
 		return nil, err
 	}
 
@@ -136,7 +143,7 @@ type editImage struct {
 }
 
 func (p *editImage) InputSchema() xai.InputSchema {
-	return imageInputSchema{edit: true}
+	return imageInputSchema{model: p.model, edit: true}
 }
 
 func (p *editImage) Params() xai.Params {
@@ -152,7 +159,7 @@ func (p *editImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBu
 		return nil, xai.ErrNotSupported
 	}
 	params := p.Params().(*imageParams)
-	if err := params.validate(true); err != nil {
+	if err := params.validate(p.model, true); err != nil {
 		return nil, err
 	}
 
@@ -200,17 +207,25 @@ func (p *imageParams) Set(name string, val any) xai.Params {
 	return p
 }
 
-func (p *imageParams) validate(edit bool) error {
+func (p *imageParams) validate(model string, edit bool) error {
 	if strings.TrimSpace(p.Prompt) == "" {
 		return fmt.Errorf("openai: Prompt is required")
 	}
-	if err := imageRestrictions[ParamQuality].ValidateString(ParamQuality, p.Quality); err != nil {
+	if err := imageQualityRestriction(model).ValidateString(ParamQuality, p.Quality); err != nil {
 		return err
 	}
 	if edit && len(p.Images) == 0 {
 		return fmt.Errorf("openai: Images is required")
 	}
 	return nil
+}
+
+func imageQualityRestriction(model string) *xai.Restriction {
+	quality := enumImageQuality
+	if isGPTImage25Model(xai.Model(model)) {
+		quality = enumGPTImage25Quality
+	}
+	return &xai.Restriction{Limit: quality}
 }
 
 func valueToImageInput(val any) string {
@@ -363,7 +378,21 @@ func (p *Service) postImageRequest(ctx context.Context, baseURL, endpoint string
 }
 
 func isGPTImageModel(model xai.Model) bool {
-	return strings.EqualFold(strings.TrimSpace(string(model)), ModelGPTImage2)
+	switch strings.ToLower(strings.TrimSpace(string(model))) {
+	case ModelGPTImage2, ModelGPTImage25Flare, ModelGPTImage25Sunburst:
+		return true
+	default:
+		return false
+	}
+}
+
+func isGPTImage25Model(model xai.Model) bool {
+	switch strings.ToLower(strings.TrimSpace(string(model))) {
+	case ModelGPTImage25Flare, ModelGPTImage25Sunburst:
+		return true
+	default:
+		return false
+	}
 }
 
 func guessOutputImageType(rawURL, outputFormat string) xai.ImageType {

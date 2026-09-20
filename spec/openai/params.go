@@ -116,7 +116,9 @@ const (
 	ModelSora2      = "sora-2"
 	ModelSora2Pro   = "sora-2-pro"
 	ModelSora2Turbo = "sora-2-turbo"
-	ModelGPTImage2  = "openai/gpt-image-2"
+	ModelGPTImage2           = "openai/gpt-image-2"
+	ModelGPTImage25Flare     = "openai/gpt-image-2.5-flare"
+	ModelGPTImage25Sunburst  = "openai/gpt-image-2.5-sunburst"
 )
 
 const (
