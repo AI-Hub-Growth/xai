@@ -486,3 +486,49 @@ func TestSubmitDoesNotRetryPolicyAssetReviewFailure(t *testing.T) {
 		t.Fatalf("createCount=%d", createCount)
 	}
 }
+
+func TestSubmitOmniReferenceTaskTypeHTTPBody(t *testing.T) {
+	for _, taskType := range []string{"edit", "reference", ""} {
+		t.Run("mode="+taskType, func(t *testing.T) {
+			var body map[string]any
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost || r.URL.Path != pathCreateTask {
+					t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+				}
+				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+					t.Error(err)
+				}
+				_, _ = w.Write([]byte(`{"id":"qvideo-edit"}`))
+			}))
+			defer srv.Close()
+			svc := NewService("test-key", append([]ClientOption{WithBaseURL(srv.URL)}, testClientOpts...)...)
+			op, err := svc.Operation(xai.Model("doubao-seedance-2-5-260628"), xai.GenVideo)
+			if err != nil {
+				t.Fatal(err)
+			}
+			op.Params().Set(seedance.ParamPrompt, "Replace the screen content").
+				Set(seedance.ParamReferenceVideoURLs, []string{"qasset://approved-video"}).
+				Set(seedance.ParamRatio, "adaptive").
+				Set(seedance.ParamDuration, -1).
+				Set(seedance.ParamOmniReferenceTaskType, taskType)
+			if _, err := op.Call(context.Background(), svc, svc.Options()); err != nil {
+				t.Fatal(err)
+			}
+			if taskType == "" {
+				if _, exists := body["omni_reference_task_type"]; exists {
+					t.Fatal("unspecified task type must be omitted")
+				}
+			} else if body["omni_reference_task_type"] != taskType {
+				t.Fatalf("task type = %v, want %s", body["omni_reference_task_type"], taskType)
+			}
+			if body["duration"] != float64(-1) || body["ratio"] != "adaptive" {
+				t.Fatalf("edit controls lost: %#v", body)
+			}
+			content := body["content"].([]any)
+			video := content[1].(map[string]any)
+			if video["role"] != "reference_video" || video["video_url"].(map[string]any)["url"] != "qasset://approved-video" {
+				t.Fatalf("target video changed: %#v", video)
+			}
+		})
+	}
+}

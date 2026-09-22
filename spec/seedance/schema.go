@@ -26,6 +26,7 @@ func GenVideoFields() []xai.Field {
 		{Name: ParamReferenceAudioURLs, Kind: types.String},
 		{Name: ParamDuration, Kind: types.Int},
 		{Name: ParamRatio, Kind: types.String},
+		{Name: ParamOmniReferenceTaskType, Kind: types.String},
 		{Name: ParamGenerateAudio, Kind: types.Bool},
 		{Name: ParamWatermark, Kind: types.Bool},
 		{Name: ParamAutoCreateAssets, Kind: types.Bool},

@@ -20,17 +20,18 @@ import (
 
 // Param name constants (Ark contents/generations/tasks body).
 const (
-	ParamText               = "text"
-	ParamPrompt             = "prompt" // alias → first text block
-	ParamReferenceImageURLs = "reference_image_urls"
-	ParamReferenceImages    = "reference_images"
-	ParamReferenceVideoURLs = "reference_video_urls"
-	ParamReferenceAudioURLs = "reference_audio_urls"
-	ParamDuration           = "duration"
-	ParamRatio              = "ratio"
-	ParamGenerateAudio      = "generate_audio"
-	ParamWatermark          = "watermark"
-	ParamAutoCreateAssets   = "auto_create_assets"
+	ParamText                  = "text"
+	ParamPrompt                = "prompt" // alias → first text block
+	ParamReferenceImageURLs    = "reference_image_urls"
+	ParamReferenceImages       = "reference_images"
+	ParamReferenceVideoURLs    = "reference_video_urls"
+	ParamReferenceAudioURLs    = "reference_audio_urls"
+	ParamDuration              = "duration"
+	ParamRatio                 = "ratio"
+	ParamOmniReferenceTaskType = "omni_reference_task_type"
+	ParamGenerateAudio         = "generate_audio"
+	ParamWatermark             = "watermark"
+	ParamAutoCreateAssets      = "auto_create_assets"
 )
 
 var (
