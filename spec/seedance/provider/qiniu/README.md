@@ -90,3 +90,9 @@ func main() {
     _, _ = xai.CallSync(ctx, svc, op, svc.Options())
 }
 ```
+
+### Seedance 2.5 编辑模式
+
+设置 `seedance.ParamOmniReferenceTaskType` 为 `"edit"`，并传入目标
+`reference_video`、`ratio="adaptive"` 和 `duration=-1`。该字段会透传到
+创建任务的 HTTP JSON；普通参考任务可显式指定 `"reference"`，不设置时省略字段。

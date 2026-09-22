@@ -207,6 +207,9 @@ func (b *backend) buildTaskBody(ctx context.Context, model string, p *seedance.P
 	if r := p.GetString(seedance.ParamRatio); r != "" {
 		body["ratio"] = r
 	}
+	if taskType := p.GetString(seedance.ParamOmniReferenceTaskType); taskType != "" {
+		body["omni_reference_task_type"] = taskType
+	}
 	if ga := p.GetBool(seedance.ParamGenerateAudio); ga != nil {
 		body["generate_audio"] = *ga
 	}
